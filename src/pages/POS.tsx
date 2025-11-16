@@ -163,7 +163,7 @@ export default function POS() {
       const discountAmount = getDiscountAmount();
       const total = getTotal();
 
-      alert(`Sale completed successfully!\nPayment method: ${paymentMethod}\nAmount paid: KES ${amountPaid.toFixed(2)}\nChange: KES ${(amountPaid - total).toFixed(2)}`);
+      alert(`Sale completed successfully!\nSubtotal: KES ${subtotal.toFixed(2)}\nTax (${taxRate}%): KES ${taxAmount.toFixed(2)}\nDiscount: KES ${discountAmount.toFixed(2)}\nTotal: KES ${total.toFixed(2)}\nPayment method: ${paymentMethod}\nAmount paid: KES ${amountPaid.toFixed(2)}\nChange: KES ${(amountPaid - total).toFixed(2)}`);
 
       // Reset cart and form
       setCart([]);
