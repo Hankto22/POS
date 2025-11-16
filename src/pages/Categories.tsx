@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getCategories, createCategory, deleteCategory, mockCategories } from '../services/api';
 import type { Category } from '../types/components';
 
 export default function Categories()
@@ -12,14 +13,14 @@ export default function Categories()
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/categories');
-      if (!res.ok) throw new Error(`Failed to fetch categories: ${res.status} ${res.statusText}`);
-      const data = await res.json();
-      setCategories(data || []);
+      const response = await getCategories();
+      // Show API data if available, otherwise show mock data for demo
+      setCategories(response.data && response.data.length > 0 ? response.data : mockCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      setError('Failed to load categories. Please check your connection.');
-      setCategories([]);
+      setError('Failed to load categories from server. Showing demo data.');
+      // Fall back to mock data for demo purposes
+      setCategories(mockCategories);
     } finally {
       setLoading(false);
     }
@@ -30,17 +31,27 @@ export default function Categories()
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCategory.trim() }),
-      });
-      if (!res.ok) throw new Error(`Failed to add category: ${res.status} ${res.statusText}`);
+      await createCategory(newCategory.trim());
       setNewCategory('');
       fetchCategories();
     } catch (error) {
       console.error('Error adding category:', error);
       setError('Failed to add category. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeCategory = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+    setLoading(true);
+    setError('');
+    try {
+      await deleteCategory(id);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      setError('Failed to delete category. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -81,8 +92,16 @@ export default function Categories()
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {categories.map(cat => (
-          <div key={cat.id} className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div key={cat.id} className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <span className="font-medium text-gray-900 dark:text-gray-100">{cat.name}</span>
+            <button
+              onClick={() => removeCategory(cat.id)}
+              disabled={loading}
+              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+              title="Remove Category"
+            >
+              ✕
+            </button>
           </div>
         ))}
       </div>

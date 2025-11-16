@@ -47,7 +47,7 @@ export default function Signup() {
       // Auto-login after successful registration
       localStorage.setItem('thriftpos_token', 'demo_token');
       navigate('/');
-    }, 1000);
+    }, 100);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

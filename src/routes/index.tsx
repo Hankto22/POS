@@ -15,6 +15,7 @@ const Products = lazy(() => import('../pages/Products'));
 const Wholesalers = lazy(() => import('../pages/Wholesalers'));
 const SalesHistory = lazy(() => import('../pages/SalesHistory'));
 const Shop = lazy(() => import('../pages/Shop'));
+const ShiftManagement = lazy(() => import('../pages/ShiftManagement'));
 
 // Helper component to wrap page with navigation buttons
 const withPageNav = (Component: React.ComponentType) => () => (
@@ -73,8 +74,12 @@ export const routes: RouteObject[] = [
     path: '/sales-history',
     element: <>{withPageNav(SalesHistory)()}</>,
   },
+  {
+    path: '/shift-management',
+    element: <>{withPageNav(ShiftManagement)()}</>,
+  },
 ];
 
 export const pageOrder = routes
-  .filter(route => route.path !== '/' && route.path !== '/settings' && route.path !== '/products' && route.path !== '/wholesalers' && route.path !== '/sales-history')
+  .filter(route => route.path !== '/' && route.path !== '/settings' && route.path !== '/wholesalers' && route.path !== '/sales-history' && route.path !== '/shift-management')
   .map(route => route.path || '');

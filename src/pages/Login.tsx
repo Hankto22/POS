@@ -21,7 +21,7 @@ export default function Login() {
       localStorage.setItem('userRole', 'admin');
       localStorage.setItem('userName', formData.username || 'Admin');
       navigate('/');
-    }, 1000);
+    }, 100);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

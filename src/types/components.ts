@@ -81,6 +81,30 @@ export interface Product {
   createdAt: string;
   category?: Category;
   wholesaler?: Wholesaler;
+  variants?: Variant[];
+}
+
+export interface Variant {
+  id: string;
+  productId: string;
+  size?: string;
+  color?: string;
+  style?: string;
+  stock: number;
+  createdAt: string;
+  product?: Product;
+  batches?: Batch[];
+}
+
+export interface Batch {
+  id: string;
+  variantId: string;
+  batchNumber?: string;
+  serialNumber?: string;
+  expirationDate?: string;
+  stock: number;
+  createdAt: string;
+  variant?: Variant;
 }
 
 export interface Category {
@@ -150,11 +174,18 @@ export interface ReceiptItem {
   total: number;
 }
 
+export interface Payment {
+  id?: string;
+  method: string;
+  amount: number;
+}
+
 export interface ReceiptData {
   date: string;
   customer: string;
   items: ReceiptItem[];
   total: number;
+  payments?: Payment[];
 }
 
 export interface ReceiptProps {
@@ -166,6 +197,7 @@ export interface ReceiptProps {
   customer?: string | Customer;
   taxRate?: number;
   discountPercent?: number;
+  payments?: Payment[];
 }
 
 // Offline Sale Types
@@ -175,4 +207,81 @@ export interface OfflineSale {
   customerId?: string | null;
   quantity: number;
   total: number;
+}
+
+// Employee & Role Management Types
+export interface User {
+  id: string;
+  username: string;
+  role: string;
+  name: string;
+  email?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Shift {
+  id: string;
+  userId: string;
+  startTime: string;
+  endTime?: string;
+  isActive: boolean;
+  totalSales: number;
+  totalHours?: number;
+  customerSatisfaction?: number;
+  createdAt: string;
+  user?: User;
+}
+
+export interface Commission {
+  id: string;
+  shiftId: string;
+  amount: number;
+  createdAt: string;
+  shift?: Shift;
+}
+
+export interface Performance {
+  totalShifts: number;
+  totalHours: number;
+  totalSales: number;
+  averageSalesPerShift: number;
+  averageHoursPerShift: number;
+  averageCustomerSatisfaction?: number;
+  shifts?: Shift[];
+}
+
+// CRM Types
+export interface Campaign {
+  id: string;
+  name: string;
+  type: string;
+  message: string;
+  targetTiers?: string;
+  scheduledAt?: string;
+  sentAt?: string;
+  createdBy: string;
+  createdAt: string;
+  user?: User;
+}
+
+export interface Feedback {
+  id: string;
+  customerId: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  customer?: Customer;
+}
+
+export interface Offer {
+  id: string;
+  customerId: string;
+  type: string;
+  description: string;
+  discountPercent: number;
+  expiresAt: string;
+  isUsed: boolean;
+  createdAt: string;
+  customer?: Customer;
 }

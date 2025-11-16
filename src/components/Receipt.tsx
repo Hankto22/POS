@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ReceiptData, ReceiptProps } from '../types/components';
 
-function exportReceiptPDF(receipt: ReceiptData & { subtotal?: number; tax?: number; discount?: number; taxRate?: number; discountPercent?: number }): void {
+function exportReceiptPDF(receipt: ReceiptData & { subtotal?: number; tax?: number; discount?: number; taxRate?: number; discountPercent?: number; payments?: Array<{ method: string; amount: number }> }): void {
   const doc = new jsPDF();
 
   // Header with branding
@@ -54,6 +54,19 @@ function exportReceiptPDF(receipt: ReceiptData & { subtotal?: number; tax?: numb
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text(`TOTAL: KES ${receipt.total.toFixed(2)}`, 14, currentY + 5);
+  currentY += 10;
+
+  // Payments
+  if (receipt.payments && receipt.payments.length > 0) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Payments:', 14, currentY);
+    currentY += 6;
+    receipt.payments.forEach(payment => {
+      doc.text(`${payment.method}: KES ${payment.amount.toFixed(2)}`, 14, currentY);
+      currentY += 6;
+    });
+  }
 
   // Footer
   doc.setFontSize(8);
@@ -74,7 +87,7 @@ function exportReceiptPDF(receipt: ReceiptData & { subtotal?: number; tax?: numb
 export { exportReceiptPDF };
 
 // Simple printable receipt component. Exported as a named export `Receipt`.
-export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ cart = [], subtotal, tax, discount, total = 0, customer, taxRate, discountPercent }, ref) => {
+export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ cart = [], subtotal, tax, discount, total = 0, customer, taxRate, discountPercent, payments }, ref) => {
   const customerName = typeof customer === 'string' ? customer : customer?.name || 'Walk-in';
 
   return (
@@ -121,6 +134,16 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ cart = [], su
         <p style={{ margin: '5px 0', fontWeight: 'bold', fontSize: '12px', borderTop: '1px solid #000', paddingTop: '5px' }}>
           TOTAL: KES {total.toFixed(2)}
         </p>
+        {payments && payments.length > 0 && (
+          <div style={{ marginTop: '5px', fontSize: '10px' }}>
+            <p style={{ margin: '2px 0', fontWeight: 'bold' }}>Payments:</p>
+            {payments.map((payment, idx) => (
+              <p key={idx} style={{ margin: '2px 0' }}>
+                {payment.method}: KES {payment.amount.toFixed(2)}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Footer */}

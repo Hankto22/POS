@@ -4,6 +4,7 @@ import type { PageNavButtonsProps } from '../types/components';
 const pageOrder = [
   '/shop',
   '/categories',
+  '/products',
   '/customers',
   '/pos',
   '/sales',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, useCallback } from "react"
+import React, { useState, useEffect, Suspense } from "react"
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
 import Sidebar from "./components/Sidebar"
 import Topbar from "./components/Topbar"
@@ -15,6 +15,11 @@ const Sales = React.lazy(() => import("./pages/Sales"))
 const Receipt = React.lazy(() => import("./pages/Receipt"))
 const ReceiptHistory = React.lazy(() => import("./pages/ReceiptHistory"))
 const LastReceipt = React.lazy(() => import("./pages/LastReceipt"))
+const Products = React.lazy(() => import("./pages/Products"))
+const Wholesalers = React.lazy(() => import("./pages/Wholesalers"))
+const SalesHistory = React.lazy(() => import("./pages/SalesHistory"))
+const ShiftManagement = React.lazy(() => import("./pages/ShiftManagement"))
+const Shop = React.lazy(() => import("./pages/Shop"))
 
 // ✅ Loading Spinner
 const LoadingSpinner = () => (
@@ -348,17 +353,6 @@ function MainLayout() {
     }
   }, [])
 
-  const handleLogin = useCallback((userData?: any) => {
-    setIsAuthenticated(true)
-    localStorage.setItem('thriftpos_token', 'demo_token')
-    // Update admin user data if provided during login
-    if (userData) {
-      setAdminUser(prev => ({
-        ...prev,
-        ...userData
-      }))
-    }
-  }, [])
 
   const handleLogout = () => {
     setIsAuthenticated(false)
@@ -429,6 +423,14 @@ function MainLayout() {
               <Routes>
                 <Route path="/" element={<WelcomeCard frostedOverlay={frostedOverlay} />} />
                 <Route
+                  path="/shop"
+                  element={
+                    <FullScreenCard>
+                      <Shop />
+                    </FullScreenCard>
+                  }
+                />
+                <Route
                   path="/categories"
                   element={
                     <FullScreenCard>
@@ -481,6 +483,38 @@ function MainLayout() {
                   element={
                     <FullScreenCard>
                       <LastReceipt />
+                    </FullScreenCard>
+                  }
+                />
+                <Route
+                  path="/products"
+                  element={
+                    <FullScreenCard>
+                      <Products />
+                    </FullScreenCard>
+                  }
+                />
+                <Route
+                  path="/wholesalers"
+                  element={
+                    <FullScreenCard>
+                      <Wholesalers />
+                    </FullScreenCard>
+                  }
+                />
+                <Route
+                  path="/sales-history"
+                  element={
+                    <FullScreenCard>
+                      <SalesHistory />
+                    </FullScreenCard>
+                  }
+                />
+                <Route
+                  path="/shift-management"
+                  element={
+                    <FullScreenCard>
+                      <ShiftManagement />
                     </FullScreenCard>
                   }
                 />

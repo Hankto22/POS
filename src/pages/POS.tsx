@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getProducts, createSale, getCustomers } from '../services/api';
+import { getProducts, createSale, getCustomers, mockProducts, mockCustomers } from '../services/api';
 import { Receipt, exportReceiptPDF } from '../components/Receipt';
 import PaymentModal from '../components/PaymentModal';
 import { useSync } from '../hooks/useSync';
@@ -28,12 +28,14 @@ export default function POS() {
           getProducts(),
           getCustomers()
         ]);
-        setProducts(productsRes.data || []);
-        setCustomers(customersRes.data || []);
+        // Show API data if available, otherwise show mock data for demo
+        setProducts(productsRes.data && productsRes.data.length > 0 ? productsRes.data : mockProducts);
+        setCustomers(customersRes.data && customersRes.data.length > 0 ? customersRes.data : mockCustomers);
       } catch (error) {
         console.error('Error fetching data:', error);
-        setProducts([]);
-        setCustomers([]);
+        // Fall back to mock data for demo purposes
+        setProducts(mockProducts);
+        setCustomers(mockCustomers);
       }
     };
     fetchData();
