@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import type { Customer } from '../types/components';
+import type { Customer, Payment } from '../types/components';
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   total: number;
   customer?: string | Customer;
-  onPaymentComplete: (paymentMethod: string, amount: number) => void;
+  onPaymentComplete: (payments: Payment[], change: number) => void;
 }
 
 export default function PaymentModal({ isOpen, onClose, total, customer, onPaymentComplete }: PaymentModalProps) {
@@ -16,17 +16,47 @@ export default function PaymentModal({ isOpen, onClose, total, customer, onPayme
   const [cardNumber, setCardNumber] = useState<string>('');
   const [cardExpiry, setCardExpiry] = useState<string>('');
   const [cardCVV, setCardCVV] = useState<string>('');
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [currentPaymentMethod, setCurrentPaymentMethod] = useState<string>('cash');
+  const [currentAmount, setCurrentAmount] = useState<string>('');
 
   const handlePayment = () => {
-    const amount = parseFloat(amountPaid);
-    if (amount < total) {
-      alert('Amount paid is less than total');
+    if (paymentMethod === 'mixed') {
+      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+      if (totalPaid < total) {
+        alert('Total amount paid is less than total');
+        return;
+      }
+      const change = Math.max(0, totalPaid - total);
+      onPaymentComplete(payments, change);
+    } else {
+      const amount = parseFloat(amountPaid);
+      if (amount < total) {
+        alert('Amount paid is less than total');
+        return;
+      }
+      const change = Math.max(0, amount - total);
+      onPaymentComplete([{ method: paymentMethod, amount }], change);
+    }
+    onClose();
+    resetForm();
+  };
+
+  const addPayment = () => {
+    const amount = parseFloat(currentAmount);
+    if (!amount || amount <= 0) {
+      alert('Please enter a valid amount');
       return;
     }
 
-    onPaymentComplete(paymentMethod, amount);
-    onClose();
-    resetForm();
+    const newPayment: Payment = { method: currentPaymentMethod, amount };
+    setPayments([...payments, newPayment]);
+    setCurrentAmount('');
+    setCurrentPaymentMethod('cash');
+  };
+
+  const removePayment = (index: number) => {
+    setPayments(payments.filter((_, i) => i !== index));
   };
 
   const resetForm = () => {
@@ -36,11 +66,20 @@ export default function PaymentModal({ isOpen, onClose, total, customer, onPayme
     setCardNumber('');
     setCardExpiry('');
     setCardCVV('');
+    setPayments([]);
+    setCurrentPaymentMethod('cash');
+    setCurrentAmount('');
+  };
+
+  const getTotalPaid = () => {
+    if (paymentMethod === 'mixed') {
+      return payments.reduce((sum, p) => sum + p.amount, 0);
+    }
+    return parseFloat(amountPaid) || 0;
   };
 
   const getChange = () => {
-    const paid = parseFloat(amountPaid) || 0;
-    return Math.max(0, paid - total);
+    return Math.max(0, getTotalPaid() - total);
   };
 
   if (!isOpen) return null;
@@ -81,83 +120,144 @@ export default function PaymentModal({ isOpen, onClose, total, customer, onPayme
           </select>
         </div>
 
-        {paymentMethod === 'mpesa' && (
+        {paymentMethod === 'mixed' ? (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              M-Pesa Number
-            </label>
-            <input
-              type="tel"
-              value={mpesaNumber}
-              onChange={(e) => setMpesaNumber(e.target.value)}
-              placeholder="07XXXXXXXX"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
-              required
-            />
-          </div>
-        )}
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Payments</h4>
 
-        {paymentMethod === 'card' && (
-          <div className="mb-4 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Card Number
+            {/* Add Payment Form */}
+            <div className="flex gap-2 mb-3">
+              <select
+                value={currentPaymentMethod}
+                onChange={(e) => setCurrentPaymentMethod(e.target.value)}
+                className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="mpesa">M-Pesa</option>
+              </select>
+              <input
+                type="number"
+                step="0.01"
+                value={currentAmount}
+                onChange={(e) => setCurrentAmount(e.target.value)}
+                placeholder="Amount"
+                className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
+              />
+              <button
+                onClick={addPayment}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+              >
+                Add
+              </button>
+            </div>
+
+            {/* Payment List */}
+            {payments.length > 0 && (
+              <div className="space-y-1 mb-3">
+                {payments.map((payment, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                    <span className="text-sm capitalize">{payment.method}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">KES {payment.amount.toFixed(2)}</span>
+                      <button
+                        onClick={() => removePayment(index)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Total Paid */}
+            <div className="flex justify-between items-center p-2 bg-blue-50 dark:bg-blue-900 rounded">
+              <span className="text-sm font-medium">Total Paid:</span>
+              <span className="text-sm font-bold">KES {getTotalPaid().toFixed(2)}</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            {paymentMethod === 'mpesa' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  M-Pesa Number
+                </label>
+                <input
+                  type="tel"
+                  value={mpesaNumber}
+                  onChange={(e) => setMpesaNumber(e.target.value)}
+                  placeholder="07XXXXXXXX"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
+                  required
+                />
+              </div>
+            )}
+
+            {paymentMethod === 'card' && (
+              <div className="mb-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Card Number
+                  </label>
+                  <input
+                    type="text"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                    placeholder="1234 5678 9012 3456"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Expiry
+                    </label>
+                    <input
+                      type="text"
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(e.target.value)}
+                      placeholder="MM/YY"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      CVV
+                    </label>
+                    <input
+                      type="text"
+                      value={cardCVV}
+                      onChange={(e) => setCardCVV(e.target.value)}
+                      placeholder="123"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Amount Paid
               </label>
               <input
-                type="text"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value)}
-                placeholder="1234 5678 9012 3456"
+                type="number"
+                step="0.01"
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Expiry
-                </label>
-                <input
-                  type="text"
-                  value={cardExpiry}
-                  onChange={(e) => setCardExpiry(e.target.value)}
-                  placeholder="MM/YY"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  CVV
-                </label>
-                <input
-                  type="text"
-                  value={cardCVV}
-                  onChange={(e) => setCardCVV(e.target.value)}
-                  placeholder="123"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
-                  required
-                />
-              </div>
-            </div>
-          </div>
+          </>
         )}
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Amount Paid
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            value={amountPaid}
-            onChange={(e) => setAmountPaid(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-gray-200"
-            required
-          />
-        </div>
-
-        {paymentMethod === 'cash' && getChange() > 0 && (
+        {getChange() > 0 && (
           <div className="mb-4 p-3 bg-green-50 dark:bg-green-900 rounded-lg">
             <div className="flex justify-between items-center">
               <span className="text-green-800 dark:text-green-200">Change:</span>

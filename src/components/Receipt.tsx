@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ReceiptData, ReceiptProps } from '../types/components';
 
-function exportReceiptPDF(receipt: ReceiptData & { subtotal?: number; tax?: number; discount?: number; taxRate?: number; discountPercent?: number; payments?: Array<{ method: string; amount: number }> }): void {
+function exportReceiptPDF(receipt: ReceiptData & { subtotal?: number; tax?: number; discount?: number; taxRate?: number; discountPercent?: number; payments?: Array<{ method: string; amount: number }>; change?: number }): void {
   const doc = new jsPDF();
 
   // Header with branding
@@ -66,6 +66,10 @@ function exportReceiptPDF(receipt: ReceiptData & { subtotal?: number; tax?: numb
       doc.text(`${payment.method}: KES ${payment.amount.toFixed(2)}`, 14, currentY);
       currentY += 6;
     });
+    if (receipt.change && receipt.change > 0) {
+      doc.text(`Change: KES ${receipt.change.toFixed(2)}`, 14, currentY);
+      currentY += 6;
+    }
   }
 
   // Footer
@@ -87,7 +91,7 @@ function exportReceiptPDF(receipt: ReceiptData & { subtotal?: number; tax?: numb
 export { exportReceiptPDF };
 
 // Simple printable receipt component. Exported as a named export `Receipt`.
-export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ cart = [], subtotal, tax, discount, total = 0, customer, taxRate, discountPercent, payments }, ref) => {
+export const Receipt = forwardRef<HTMLDivElement, ReceiptProps & { change?: number }>(({ cart = [], subtotal, tax, discount, total = 0, customer, taxRate, discountPercent, payments, change }, ref) => {
   const customerName = typeof customer === 'string' ? customer : customer?.name || 'Walk-in';
 
   return (
@@ -142,6 +146,11 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ cart = [], su
                 {payment.method}: KES {payment.amount.toFixed(2)}
               </p>
             ))}
+            {change && change > 0 && (
+              <p style={{ margin: '2px 0', fontWeight: 'bold' }}>
+                Change: KES {change.toFixed(2)}
+              </p>
+            )}
           </div>
         )}
       </div>

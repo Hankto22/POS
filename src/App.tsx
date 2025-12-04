@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense } from "react"
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
+import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import Sidebar from "./components/Sidebar"
 import Topbar from "./components/Topbar"
 import backgroundImage from "./assets/vintage thrift shop.jpeg"
@@ -323,11 +324,11 @@ interface AdminUser {
 
 // ✅ Main Layout
 function MainLayout() {
+  const { isAuthenticated, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
   const [enhancedBg, setEnhancedBg] = useState(false)
   const [frostedOverlay, setFrostedOverlay] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminUser, setAdminUser] = useState<AdminUser>({
     username: "janedoe",
     firstName: "Jane",
@@ -345,18 +346,8 @@ function MainLayout() {
     document.documentElement.classList.toggle("dark", darkMode)
   }, [darkMode])
 
-  // Simulate authentication check
-  useEffect(() => {
-    const token = localStorage.getItem('thriftpos_token')
-    if (token) {
-      setIsAuthenticated(true)
-    }
-  }, [])
-
-
   const handleLogout = () => {
-    setIsAuthenticated(false)
-    localStorage.removeItem('thriftpos_token')
+    logout()
   }
 
   if (!isAuthenticated) {
@@ -545,9 +536,11 @@ function MainLayout() {
 // ✅ Root App
 function App() {
   return (
-    <Router>
-      <MainLayout />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <MainLayout />
+      </Router>
+    </AuthProvider>
   )
 }
 

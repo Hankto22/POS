@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getProducts, createSale, getCustomers, mockProducts, mockCustomers } from '../services/api';
+import { getProducts, createSale, createTransaction, getCustomers, mockProducts, mockCustomers } from '../services/api';
 import { Receipt, exportReceiptPDF } from '../components/Receipt';
 import PaymentModal from '../components/PaymentModal';
 import { useSync } from '../hooks/useSync';
@@ -137,7 +137,7 @@ export default function POS() {
     setShowPaymentModal(true);
   };
 
-  const handlePaymentComplete = async (paymentMethod: string, amountPaid: number) => {
+  const handlePaymentComplete = async (payments: Array<{ method: string; amount: number }>, change: number) => {
     try {
       // Validate stock availability before processing sales
       for (const item of cart) {
@@ -147,29 +147,45 @@ export default function POS() {
         }
       }
 
-      // Process each sale with business logic
-      for (const item of cart) {
-        await createSale({
-          productId: item.id,
-          customerId: customerId || null,
-          quantity: item.quantity,
-          total: item.sellingPrice * item.quantity,
-        });
-      }
-
       // Calculate business metrics
       const subtotal = getSubtotal();
       const taxAmount = getTaxAmount();
       const discountAmount = getDiscountAmount();
       const total = getTotal();
 
-      alert(`Sale completed successfully!\nSubtotal: KES ${subtotal.toFixed(2)}\nTax (${taxRate}%): KES ${taxAmount.toFixed(2)}\nDiscount: KES ${discountAmount.toFixed(2)}\nTotal: KES ${total.toFixed(2)}\nPayment method: ${paymentMethod}\nAmount paid: KES ${amountPaid.toFixed(2)}\nChange: KES ${(amountPaid - total).toFixed(2)}`);
+      // Prepare transaction data
+      const transactionData = {
+        customerId: customerId || undefined,
+        items: cart.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          total: item.sellingPrice * item.quantity,
+        })),
+        payments: payments,
+        tax: taxAmount,
+        discount: discountAmount,
+      };
+
+      // Create transaction (which creates sales internally)
+      await createTransaction(transactionData);
+
+      // Store payment info for receipt
+      setLastPayments(payments);
+      setLastChange(change);
+
+      // Create payment breakdown message
+      const paymentBreakdown = payments.map(p => `${p.method}: KES ${p.amount.toFixed(2)}`).join('\n');
+      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+
+      alert(`Sale completed successfully!\nSubtotal: KES ${subtotal.toFixed(2)}\nTax (${taxRate}%): KES ${taxAmount.toFixed(2)}\nDiscount: KES ${discountAmount.toFixed(2)}\nTotal: KES ${total.toFixed(2)}\n\nPayments:\n${paymentBreakdown}\nTotal Paid: KES ${totalPaid.toFixed(2)}\nChange: KES ${change.toFixed(2)}`);
 
       // Reset cart and form
       setCart([]);
       setCustomerId('');
       setDiscountCode('');
       setAppliedDiscount(0);
+      setLastPayments([]);
+      setLastChange(0);
     } catch (err) {
       console.error('Checkout error:', err);
       alert('Failed to complete sale. Please try again.');
@@ -189,6 +205,9 @@ export default function POS() {
     printWindow.close();
   };
 
+  const [lastPayments, setLastPayments] = useState<Array<{ method: string; amount: number }>>([]);
+  const [lastChange, setLastChange] = useState<number>(0);
+
   const handleExportPDF = () => {
     const receiptData = {
       date: new Date().toLocaleString(),
@@ -200,6 +219,8 @@ export default function POS() {
       total: getTotal(),
       taxRate,
       discountPercent: appliedDiscount,
+      payments: lastPayments.length > 0 ? lastPayments : undefined,
+      change: lastChange > 0 ? lastChange : undefined,
     };
     exportReceiptPDF(receiptData);
   };
@@ -404,6 +425,8 @@ export default function POS() {
             customer={customers.find(c => c.id === customerId) || 'Walk-in'}
             taxRate={taxRate}
             discountPercent={appliedDiscount}
+            payments={lastPayments}
+            change={lastChange}
           />
         </div>
       </div>

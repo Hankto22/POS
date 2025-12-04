@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { login } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
+  const { login: authLogin } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -13,15 +16,20 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login - replace with actual authentication
-    setTimeout(() => {
-      setIsLoading(false);
-      // For demo purposes, navigate to home page
-      localStorage.setItem('thriftpos_token', 'demo_token');
-      localStorage.setItem('userRole', 'admin');
-      localStorage.setItem('userName', formData.username || 'Admin');
+    try {
+      const response = await login({
+        username: formData.username,
+        password: formData.password,
+      });
+
+      authLogin(response.data.user, response.data.token);
       navigate('/');
-    }, 100);
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      alert(error.response?.data?.error || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

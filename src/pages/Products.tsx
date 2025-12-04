@@ -6,6 +6,8 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [wholesalers, setWholesalers] = useState<Wholesaler[]>([]);
+  const [apiCategories, setApiCategories] = useState<Category[]>([]);
+  const [apiWholesalers, setApiWholesalers] = useState<Wholesaler[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -82,15 +84,22 @@ export default function Products() {
         getCategories(),
         getWholesalers(),
       ]);
+
+      // Store API data separately
+      const apiCategoriesData = categoriesRes.data || [];
+      const apiWholesalersData = wholesalersRes.data || [];
+
+      setApiCategories(apiCategoriesData);
+      setApiWholesalers(apiWholesalersData);
+
       // Show API data if available, otherwise show mock data for demo
       setProducts(productsRes.data && productsRes.data.length > 0 ? productsRes.data : mockProducts);
 
-      // Combine static mock categories with dynamic API categories
-      const apiCategories = categoriesRes.data || [];
+      // Combine static mock categories with dynamic API categories for display
       const combinedCategories = [...mockCategories];
 
       // Add API categories that don't already exist in mock data
-      apiCategories.forEach(apiCategory => {
+      apiCategoriesData.forEach(apiCategory => {
         if (!combinedCategories.some(mockCategory => mockCategory.id === apiCategory.id)) {
           combinedCategories.push(apiCategory);
         }
@@ -98,12 +107,11 @@ export default function Products() {
 
       setCategories(combinedCategories);
 
-      // Combine static mock wholesalers with dynamic API wholesalers
-      const apiWholesalers = wholesalersRes.data || [];
+      // Combine static mock wholesalers with dynamic API wholesalers for display
       const combinedWholesalers = [...mockWholesalers];
 
       // Add API wholesalers that don't already exist in mock data
-      apiWholesalers.forEach(apiWholesaler => {
+      apiWholesalersData.forEach(apiWholesaler => {
         if (!combinedWholesalers.some(mockWholesaler => mockWholesaler.id === apiWholesaler.id)) {
           combinedWholesalers.push(apiWholesaler);
         }
@@ -116,6 +124,8 @@ export default function Products() {
       setProducts(mockProducts);
       setCategories(mockCategories);
       setWholesalers(mockWholesalers);
+      setApiCategories([]);
+      setApiWholesalers([]);
     } finally {
       setLoading(false);
     }
@@ -330,7 +340,18 @@ export default function Products() {
       const newWholesaler = await createWholesaler(wholesalerFormData);
       // Refresh wholesalers list
       const wholesalersRes = await getWholesalers();
-      setWholesalers(wholesalersRes.data || []);
+      const apiWholesalersData = wholesalersRes.data || [];
+      setApiWholesalers(apiWholesalersData);
+
+      // Update combined list for display
+      const combinedWholesalers = [...mockWholesalers];
+      apiWholesalersData.forEach(apiWholesaler => {
+        if (!combinedWholesalers.some(mockWholesaler => mockWholesaler.id === apiWholesaler.id)) {
+          combinedWholesalers.push(apiWholesaler);
+        }
+      });
+      setWholesalers(combinedWholesalers);
+
       // Set the new wholesaler as selected
       setFormData({ ...formData, wholesalerId: newWholesaler.data.id });
       resetWholesalerForm();
@@ -454,7 +475,7 @@ export default function Products() {
                 required
               >
                 <option value="">Select Category</option>
-                {categories.map((category) => (
+                {apiCategories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
@@ -514,7 +535,7 @@ export default function Products() {
                   required
                 >
                   <option value="">Select Wholesaler</option>
-                  {wholesalers.map((wholesaler) => (
+                  {apiWholesalers.map((wholesaler) => (
                     <option key={wholesaler.id} value={wholesaler.id}>
                       {wholesaler.name}
                     </option>
